@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    container_name: db_container
+    hostname: db
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 6543:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - mynet
+  backend:
+    build: .
+    container_name: rest_container
+    hostname: rest-hostname
+    command: /bin/sh -c "go run main.go"
+    ports:
+      - 8080
+    depends_on:
+      - db
+    networks:
+      - mynet
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  nginx:
+    build: "./nginx"
+    container_name: nginx-container
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - mynet
+
+volumes:
+  db-data:
+networks:
+  mynet:
+    driver: bridge
